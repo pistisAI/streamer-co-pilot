@@ -192,13 +192,49 @@ DecisionRule chatMuteCommandRule() => DecisionRule(
           }),
     );
 
-/// Built-in rule: send welcome message when first viewer joins (placeholder logic).
-DecisionRule welcomeNewViewerRule() => DecisionRule(
-      name: 'welcome_new_viewer',
-      condition: (state) => state.platformConnected && state.chatMessageCount > 0,
-      action: (client, state) async =>
-          client.sendCommand('send_message', {'message': 'Welcome to the stream! 👋'}),
-    );
+/// Built-in rule: greet each new chatter exactly once per session.
+///
+/// Tracks already-greeted users in [greetedUsers]; pass a fresh set per
+/// stream session. Greeting fires when a previously-unseen user appears in
+/// the recent chat preview.
+DecisionRule welcomeNewViewerRule({Set<String>? greetedUsers}) {
+  final greeted = greetedUsers ?? <String>{};
+  return DecisionRule(
+    name: 'welcome_new_viewer',
+    condition: (state) =>
+        state.platformConnected &&
+        state.recentChatPreview.any((msg) {
+          final user = _chatUserOf(msg);
+          return user != null && !greeted.contains(user);
+        }),
+    action: (client, state) async {
+      final msg = state.recentChatPreview
+          .map(_chatUserOf)
+          .firstWhere((u) => u != null && !greeted.contains(u), orElse: () => null);
+      if (msg == null) {
+        return const CommandResult(success: false, message: 'no new user');
+      }
+      greeted.add(msg);
+      return client.sendCommand(
+          'send_message', {'message': 'Welcome to the stream, $msg! 👋'});
+    },
+  );
+}
+
+/// Best-effort extraction of the chatter name from a chat preview line.
+/// Preview lines are free-form; common shapes are "user: message" and
+/// "#channel user: message" (Twitch IRC). Returns null if unparseable.
+String? _chatUserOf(String line) {
+  final idx = line.indexOf(':');
+  if (idx <= 0 || idx + 1 >= line.length || line[idx + 1] != ' ') return null;
+  var user = line.substring(0, idx).trim();
+  if (user.startsWith('#')) {
+    final parts = user.split(' ');
+    user = parts.length > 1 ? parts[1].trim() : '';
+  }
+  if (user.isEmpty || user.contains(' ')) return null;
+  return user;
+}
 
 /// Default rule set for a basic streaming agent.
 List<DecisionRule> defaultRules() => [

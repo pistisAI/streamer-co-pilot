@@ -143,6 +143,28 @@ class TwitchAuth extends ChangeNotifier {
     return true;
   }
 
+  /// Validate a directly-supplied access token against Helix /validate and
+  /// adopt it if valid (resolving user info). Returns false if Twitch rejects it.
+  Future<bool> validateAndAdoptToken(String token) async {
+    try {
+      final res = await http.get(
+        Uri.parse('https://id.twitch.tv/oauth2/validate'),
+        headers: {'Authorization': 'OAuth $token'},
+      );
+      if (res.statusCode != 200) return false;
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      _accessToken = token;
+      final expiresIn = data['expires_in'] as int? ?? 3600;
+      _tokenExpiry = DateTime.now().add(Duration(seconds: expiresIn));
+      await _resolveUserInfo();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('[TwitchAuth] validateAndAdoptToken error: $e');
+      return false;
+    }
+  }
+
   /// Resolve the authenticated user's info.
   Future<void> _resolveUserInfo() async {
     if (_accessToken == null) return;

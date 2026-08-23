@@ -65,10 +65,15 @@ class TwitchPlatform extends StreamPlatform with ChangeNotifier {
   Future<bool> connect(PlatformCredentials creds) async {
     _channelName = creds.channelName;
 
-    // Load saved tokens or use provided ones
-    if (creds.accessToken != null) {
-      // Tokens provided directly (e.g., from settings form)
-      // For now, we use the OAuth flow via browser
+    // Direct-token path: validate a supplied access token via Helix /validate
+    // and use it immediately (used by settings form / tests). Otherwise fall
+    // back to the saved-token OAuth flow.
+    if (creds.accessToken != null && creds.accessToken!.isNotEmpty) {
+      final valid = await auth.validateAndAdoptToken(creds.accessToken!);
+      if (!valid) {
+        debugPrint('[TwitchPlatform] Supplied access token invalid');
+        return false;
+      }
     }
 
     // Try loading saved tokens first
@@ -118,6 +123,7 @@ class TwitchPlatform extends StreamPlatform with ChangeNotifier {
 
     // Wire IRC messages to our chat stream
     _irc!.messages.listen((msg) {
+      _rememberChatMessage(msg);
       _chatController?.add(msg);
     });
 
@@ -194,9 +200,22 @@ class TwitchPlatform extends StreamPlatform with ChangeNotifier {
 
   @override
   Future<List<ChatMessage>> fetchRecentChat({int count = 30}) async {
-    // Twitch IRC doesn't have a history API — return empty
-    // The chat stream provides real-time messages
-    return [];
+    // Serve from the in-memory ring buffer filled by the IRC chat stream.
+    final messages = _recentChat;
+    return messages.length <= count
+        ? List.of(messages)
+        : messages.sublist(messages.length - count);
+  }
+
+  /// Ring buffer of the most recent chat messages (max [_recentChatLimit]).
+  final List<ChatMessage> _recentChat = <ChatMessage>[];
+  static const int _recentChatLimit = 100;
+
+  void _rememberChatMessage(ChatMessage msg) {
+    _recentChat.add(msg);
+    if (_recentChat.length > _recentChatLimit) {
+      _recentChat.removeRange(0, _recentChat.length - _recentChatLimit);
+    }
   }
 
   @override
