@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:streamer_co_pilot/models/channel_event.dart';
 import 'package:streamer_co_pilot/platforms/twitch_auth.dart';
 import 'package:streamer_co_pilot/platforms/twitch_eventsub_client.dart';
 
