@@ -6,6 +6,7 @@ import '../models/channel_event.dart';
 import 'twitch_auth.dart';
 import 'twitch_irc_client.dart';
 import 'twitch_helix_client.dart';
+import 'twitch_eventsub_client.dart';
 
 /// Twitch platform implementation.
 ///
@@ -19,6 +20,8 @@ class TwitchPlatform extends StreamPlatform with ChangeNotifier {
   late final TwitchHelixClient _helix;
 
   TwitchIrcClient? _irc;
+  TwitchEventSubClient? _eventSub;
+  StreamSubscription? _eventSubSub;
   Timer? _statusPoller;
   StreamController<ChatMessage>? _chatController;
   StreamController<StreamStatus>? _statusController;
@@ -32,9 +35,10 @@ class TwitchPlatform extends StreamPlatform with ChangeNotifier {
   String? _broadcasterId;
   String? _moderatorId;
 
-  TwitchPlatform({TwitchHelixClient? helixClient, TwitchIrcClient? ircClient}) {
+  TwitchPlatform({TwitchHelixClient? helixClient, TwitchIrcClient? ircClient, TwitchEventSubClient? eventSubClient}) {
     _helix = helixClient ?? TwitchHelixClient(auth);
     _irc = ircClient;
+    _eventSub = eventSubClient;
     _chatController = StreamController<ChatMessage>.broadcast();
     _statusController = StreamController<StreamStatus>.broadcast();
     _eventController = StreamController<ChannelEvent>.broadcast();
@@ -122,6 +126,21 @@ class TwitchPlatform extends StreamPlatform with ChangeNotifier {
       _eventController?.add(event);
     });
 
+    // Connect EventSub for follows/cheers/raids (websocket transport).
+    try {
+      _eventSub ??= TwitchEventSubClient(
+        auth: auth,
+        userIdProvider: () => _broadcasterId,
+      );
+      await _eventSub!.connect();
+      _eventSubSub?.cancel();
+      _eventSubSub = _eventSub!.events.listen((event) {
+        _eventController?.add(event);
+      });
+    } catch (e) {
+      debugPrint('[TwitchPlatform] EventSub connect failed (non-fatal): $e');
+    }
+
     // Start polling stream status
     _startStatusPolling();
 
@@ -134,6 +153,9 @@ class TwitchPlatform extends StreamPlatform with ChangeNotifier {
   Future<void> disconnect() async {
     _statusPoller?.cancel();
     _irc?.disconnect();
+    _eventSub?.dispose();
+    _eventSubSub?.cancel();
+    _eventSub = null;
     _connected = false;
     notifyListeners();
   }
