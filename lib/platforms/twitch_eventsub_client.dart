@@ -17,10 +17,9 @@ import 'twitch_auth.dart';
 /// Reconnect logic: Twitch sends `session_welcome` with a keepalive
 /// timeout; on close or timeout we reconnect with exponential backoff.
 class TwitchEventSubClient {
-  TwitchEventSubClient({required TwitchAuth auth, this.userIdProvider})
-      : _auth = auth;
+  TwitchEventSubClient({required this.auth, this.userIdProvider});
 
-  final TwitchAuth _auth;
+  final TwitchAuth auth;
   final String? Function()? userIdProvider;
 
   WebSocketChannel? _ws;
@@ -39,7 +38,7 @@ class TwitchEventSubClient {
   bool get connected => _ws != null && _sessionId != null;
 
   Future<void> connect() async {
-    if (_disposed || _auth.accessToken == null) return;
+    if (_disposed || auth.accessToken == null) return;
     try {
       _ws = WebSocketChannel.connect(Uri.parse(_url));
       _sub = _ws!.stream.listen(_onMessage,
@@ -88,9 +87,9 @@ class TwitchEventSubClient {
   }
 
   Future<void> _subscribeToEvents() async {
-    final token = _auth.accessToken;
-    final clientId = _auth.clientId;
-    final userId = userIdProvider?.call() ?? _auth.broadcasterId ?? '';
+    final token = auth.accessToken;
+    final clientId = auth.clientId;
+    final userId = userIdProvider?.call() ?? auth.broadcasterId ?? '';
     if (token == null || clientId == null || clientId.isEmpty || userId.isEmpty) {
       return;
     }
