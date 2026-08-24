@@ -897,6 +897,8 @@ const _overlayHtml = '''
   .alert.sub { color: #9147ff; border-color: #9147ff; box-shadow: 0 0 24px #9147ff66; }
   .alert.resub { color: #ff9d00; border-color: #ff9d00; box-shadow: 0 0 24px #ff9d0066; }
   .alert.raid { color: #ff4444; border-color: #ff4444; box-shadow: 0 0 24px #ff444466; }
+  .alert.follow { color: #00bfff; border-color: #00bfff; box-shadow: 0 0 24px #00bfff66; }
+  .alert.cheer { color: #ffd700; border-color: #ffd700; box-shadow: 0 0 24px #ffd70066; }
   @keyframes alertIn { from { opacity: 0; transform: translateY(-30px) scale(0.8); } to { opacity: 1; transform: translateY(0) scale(1); } }
   @keyframes pulse { 50% { transform: scale(1.04); } }
   @keyframes alertOut { to { opacity: 0; transform: translateY(-20px); } }
@@ -964,6 +966,8 @@ SSE.addEventListener('channel_event', (e) => {
     if (ev.type === 'subscription') showAlert('sub', '⭐ ' + ev.user + ' subscribed!');
     else if (ev.type === 'resub') showAlert('resub', '🔥 ' + ev.user + ' re-subbed for ' + (ev.count || '?') + ' months!' + (ev.message ? ' — "' + ev.message + '"' : ''));
     else if (ev.type === 'raid') showAlert('raid', '🚀 ' + ev.user + ' raided with ' + (ev.count || '?') + ' viewers!');
+    else if (ev.type === 'follow') showAlert('follow', '💙 ' + ev.user + ' followed!');
+    else if (ev.type === 'cheer') showAlert('cheer', '✨ ' + ev.user + ' cheered ' + (ev.count || '?') + ' bits!' + (ev.message ? ' — "' + ev.message + '"' : ''));
   } catch (_) {}
 });
 
