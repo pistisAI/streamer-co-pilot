@@ -75,22 +75,22 @@ Documented in `PLATFORM-INTEGRATION.md` as future work. The interface is ready �
 - [x] Twitch OAuth callback handler at `/auth/callback`
 - [x] All providers wired in `main.dart`
 
-## Phase 5: Agent Integration
+## Phase 5: Agent Integration ✅ (Done)
 
 - [x] Hermes skill for streamer-co-pilot
 - [x] Decision loop: poll `/state`, decide, send `/command` (lib/agent/decision_loop.dart, lib/agent/agent_client.dart, lib/agent/agent_main.dart)
 - [x] Event-driven mode (WebSocket on server at `/ws`; SSE client in AgentClient)
-- [ ] Alert overlay (donations, follows, subs) — subs/resubs/raids via IRC USERNOTICE done; follows/donations need Helix EventSub
+- [x] Alert overlay (donations, follows, subs) — subs/resubs/raids via IRC USERNOTICE; follows/cheers via Helix EventSub; all wired in `lib/widgets/alert_overlay.dart` and `lib/platforms/twitch_eventsub_client.dart`
 
-## Phase 6: Polish & Release
+## Phase 6: Polish & Release ✅ (Done)
 
-- [ ] Widget tests (update existing test for new providers)
-- [ ] Unit tests for Twitch IRC, Helix, OBS controller
-- [ ] Integration test (OBS + Twitch end-to-end)
-- [ ] Windows installer (Inno Setup — done, needs CI verification)
-- [ ] Linux AppImage
-- [ ] macOS DMG
-- [ ] CI pipeline (release workflow done, needs testing)
+- [x] Widget tests (alert_overlay, connection_indicator, error_banner, chat_tab, dashboard_tab, settings_tab)
+- [x] Unit tests for Twitch IRC, Helix, OBS controller, EventSub, Auth, YouTube moderation
+- [x] Integration test (OBS + Twitch end-to-end in `test/integration/obs_twitch_e2e_test.dart`)
+- [x] Windows installer (Inno Setup — `scripts/packaging/build_windows_installer.ps1`, verified in CI)
+- [x] Linux AppImage (`packaging/appimage/build-appimage.sh`, verified in CI)
+- [x] macOS DMG (`packaging/macos/build-dmg.sh`, wired in release.yml)
+- [x] CI pipeline (release workflow at `.github/workflows/release.yml`; tag push creates multi-platform release)
 
 ## Risk Register
 
