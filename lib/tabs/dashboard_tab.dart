@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/streamer_bot_provider.dart';
 import '../providers/obs_controller.dart';
 import '../platforms/twitch_platform.dart';
+import '../widgets/alert_overlay.dart';
 
 class DashboardTab extends StatelessWidget {
   const DashboardTab({super.key});
@@ -11,7 +12,10 @@ class DashboardTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: Column(
+      child: Stack(
+        children: [
+          const AlertOverlay(),
+          Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // ── Stream Status Card ──
@@ -283,6 +287,8 @@ class DashboardTab extends StatelessWidget {
               ),
             ),
           ),
+        ],
+        ),
         ],
       ),
     );

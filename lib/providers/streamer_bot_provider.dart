@@ -293,25 +293,7 @@ class StreamerBotProvider extends ChangeNotifier {
       final eventType = parts[0];
       try {
         final data = jsonDecode(parts[1]);
-        switch (eventType) {
-          case 'platform_status':
-            _streamStatus = data['live'] == true ? 'live' : 'offline';
-            _title = data['title'] ?? _title;
-            _game = data['game'] ?? _game;
-            _viewers = data['viewers'] ?? _viewers;
-            notifyListeners();
-            break;
-          case 'channel_event':
-            _alerts.insert(0, Map<String, dynamic>.from(data));
-            if (_alerts.length > 50) _alerts = _alerts.sublist(0, 50);
-            _showAlert(data);
-            break;
-          case 'chat_message':
-            _chat.insert(0, ChatMessage.fromJson(Map<String, dynamic>.from(data)));
-            if (_chat.length > 200) _chat = _chat.sublist(0, 200);
-            notifyListeners();
-            break;
-        }
+        _dispatchSseEvent(eventType, data);
       } catch (e) {
         _setError('handleSseEvent/$eventType', e);
       }
@@ -325,6 +307,33 @@ class StreamerBotProvider extends ChangeNotifier {
       } catch (e) {
         _setError('handleSseEvent/chat', e);
       }
+    }
+  }
+
+  /// Route a decoded SSE event into state. Public test seam: tests call this
+  /// directly with a map instead of going through the SSE transport.
+  void handleSseEventForTest(String eventType, Map<String, dynamic> data) =>
+      _dispatchSseEvent(eventType, data);
+
+  void _dispatchSseEvent(String eventType, dynamic data) {
+    switch (eventType) {
+      case 'platform_status':
+        _streamStatus = data['live'] == true ? 'live' : 'offline';
+        _title = data['title'] ?? _title;
+        _game = data['game'] ?? _game;
+        _viewers = data['viewers'] ?? _viewers;
+        notifyListeners();
+        break;
+      case 'channel_event':
+        _alerts.insert(0, Map<String, dynamic>.from(data));
+        if (_alerts.length > 50) _alerts = _alerts.sublist(0, 50);
+        _showAlert(data);
+        break;
+      case 'chat_message':
+        _chat.insert(0, ChatMessage.fromJson(Map<String, dynamic>.from(data)));
+        if (_chat.length > 200) _chat = _chat.sublist(0, 200);
+        notifyListeners();
+        break;
     }
   }
 
