@@ -14,7 +14,10 @@ import 'stream_platform.dart';
 ///
 /// Requires an OAuth access token with
 /// https://www.googleapis.com/auth/youtube.force-ssl scope.
-/// Moderation endpoints exist but are not implemented here yet.
+///
+/// Moderation supports temporary/permanent bans, unbans, deleting recent chat
+/// messages, and slow mode through the YouTube Live Streaming API. Other chat
+/// modes return an explicit unsupported result.
 class YoutubePlatform extends StreamPlatform with ChangeNotifier {
   final http.Client _http;
   Timer? _pollTimer;
