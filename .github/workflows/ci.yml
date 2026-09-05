@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -26,14 +26,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           flutter-version: 3.44.x
       - run: flutter pub get
       - run: flutter test --coverage
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: coverage
           path: coverage/
@@ -44,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -57,11 +57,11 @@ jobs:
       - name: Build AppImage (verify packaging)
         run: |
           OUTPUT_DIR="${GITHUB_WORKSPACE}/packaging/appimage" bash packaging/appimage/build-appimage.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: streamer-co-pilot-linux
           path: build/linux/x64/release/bundle/
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: streamer-co-pilot-linux-appimage
           path: packaging/appimage/streamer-co-pilot-*.AppImage
@@ -72,7 +72,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -84,11 +84,11 @@ jobs:
       - name: Build Installer
         shell: pwsh
         run: .\scripts\packaging\build_windows_installer.ps1
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: streamer-co-pilot-windows
           path: build/windows/x64/runner/Release/
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: streamer-co-pilot-windows-installer
           path: dist/windows/*.exe
@@ -107,14 +107,14 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           flutter-version: 3.44.x
       - run: flutter pub get
       - run: flutter build macos --release
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: streamer-co-pilot-macos
           path: build/macos/Build/Products/Release/

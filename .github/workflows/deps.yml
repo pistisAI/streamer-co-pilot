@@ -9,8 +9,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - run: |
-          for req in services/bot-service/requirements.txt services/song-service/requirements.txt; do
-            if [ -f "$req" ]; then echo "=== $req ==="; head -20 "$req"; fi
-          done
+      - uses: actions/checkout@v7
+      - name: Check pubspec.yaml
+        run: |
+          echo "=== pubspec.yaml ==="
+          head -30 pubspec.yaml
+          echo ""
+          echo "=== dev_dependencies ==="
+          grep -A 20 "dev_dependencies:" pubspec.yaml || true
