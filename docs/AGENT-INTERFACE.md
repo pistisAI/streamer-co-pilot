@@ -99,6 +99,49 @@ Send a command. The app routes it to OBS or the platform.
 
 Returns an HTML page designed for OBS browser source. Shows stream status bar + scrolling chat. Polls `/state` every 5s.
 
+### `POST /mod/timeout` — Timeout a User
+
+```json
+{ "user": "username", "duration": 300 }
+```
+
+### `POST /mod/ban` — Ban a User
+
+```json
+{ "user": "username" }
+```
+
+### `POST /mod/unban` — Unban a User
+
+```json
+{ "user": "username" }
+```
+
+### `POST /mod/clear` — Clear Chat
+
+No body required.
+
+### `POST /mod/chatmode` — Set Chat Mode
+
+```json
+{ "mode": "slow", "enabled": true }
+```
+
+Modes: `slow`, `subscribers`, `followers`, `emote_only`.
+
+### `GET /errors` — Backend Error Buffer
+
+Returns buffered backend errors from the last 50 events:
+
+```json
+{
+  "errors": [
+    { "context": "platform", "message": "Bad platform: ..." },
+    { "context": "server", "message": "Failed to start: ..." }
+  ]
+}
+```
+
 ### `GET /auth/callback` — Twitch OAuth Redirect
 
 Twitch redirects here after user authorizes the app. Exchanges the code for tokens and auto-connects.

@@ -106,6 +106,10 @@ class AgentServer extends ChangeNotifier {
   final List<Map<String, dynamic>> _customCommands = [];
   static const _maxChatBuffer = 100;
 
+  // Error buffer for /errors endpoint
+  final List<Map<String, String>> _errorBuffer = [];
+  static const _maxErrorBuffer = 50;
+
   // SSE event stream for real-time updates
   final StreamController<String> _sseController = StreamController<String>.broadcast();
   // WebSocket clients for real-time updates
@@ -168,6 +172,13 @@ class AgentServer extends ChangeNotifier {
     _chatBuffer.add(msg);
     if (_chatBuffer.length > _maxChatBuffer) {
       _chatBuffer.removeAt(0);
+    }
+  }
+
+  void _recordError(String context, String message) {
+    _errorBuffer.add({'context': context, 'message': message});
+    if (_errorBuffer.length > _maxErrorBuffer) {
+      _errorBuffer.removeAt(0);
     }
   }
 
@@ -479,6 +490,23 @@ class AgentServer extends ChangeNotifier {
         final ok = await _platform?.banUser(user) ?? false;
         return AgentCommandResult(success: ok, message: ok ? 'Banned $user' : 'Failed');
 
+      case 'unban':
+        final user = params['user'] as String?;
+        if (user == null) return const AgentCommandResult(success: false, message: 'Missing user');
+        final ok = await _platform?.unbanUser(user) ?? false;
+        return AgentCommandResult(success: ok, message: ok ? 'Unbanned $user' : 'Failed');
+
+      case 'clear_chat':
+        final ok = await _platform?.clearChat() ?? false;
+        return AgentCommandResult(success: ok, message: ok ? 'Chat cleared' : 'Failed');
+
+      case 'chat_mode':
+        final mode = params['mode'] as String?;
+        final enabled = params['enabled'] as bool? ?? true;
+        if (mode == null) return const AgentCommandResult(success: false, message: 'Missing mode');
+        final ok = await _platform?.setChatMode(mode, enabled) ?? false;
+        return AgentCommandResult(success: ok, message: ok ? 'Chat mode $mode=$enabled' : 'Failed');
+
       case 'connect_platform':
         final platform = params['platform'] as String?;
         final channel = params['channel'] as String?;
@@ -530,8 +558,10 @@ class AgentServer extends ChangeNotifier {
         message: ok ? 'Connected to $platform ($channel)' : 'Failed to connect $platform',
       );
     } on ArgumentError catch (e) {
+      _recordError('platform', 'Bad platform: ${e.message}');
       return AgentCommandResult(success: false, message: e.message?.toString() ?? 'Bad platform');
     } on UnsupportedError catch (e) {
+      _recordError('platform', 'Unsupported: ${e.message}');
       return AgentCommandResult(success: false, message: e.message ?? 'Unsupported');
     }
   }
@@ -735,6 +765,67 @@ class AgentServer extends ChangeNotifier {
         );
       });
 
+      // POST /mod/timeout — timeout a user
+      router.post('/mod/timeout', (request) async {
+        final body = await request.readAsString();
+        final params = jsonDecode(body) as Map<String, dynamic>;
+        final result = await executeCommand('timeout', params);
+        return shelf.Response.ok(
+          jsonEncode({'success': result.success, 'message': result.message}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      });
+
+      // POST /mod/ban — ban a user
+      router.post('/mod/ban', (request) async {
+        final body = await request.readAsString();
+        final params = jsonDecode(body) as Map<String, dynamic>;
+        final result = await executeCommand('ban', params);
+        return shelf.Response.ok(
+          jsonEncode({'success': result.success, 'message': result.message}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      });
+
+      // POST /mod/unban — unban a user
+      router.post('/mod/unban', (request) async {
+        final body = await request.readAsString();
+        final params = jsonDecode(body) as Map<String, dynamic>;
+        final result = await executeCommand('unban', params);
+        return shelf.Response.ok(
+          jsonEncode({'success': result.success, 'message': result.message}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      });
+
+      // POST /mod/clear — clear chat
+      router.post('/mod/clear', (request) async {
+        final result = await executeCommand('clear_chat', {});
+        return shelf.Response.ok(
+          jsonEncode({'success': result.success, 'message': result.message}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      });
+
+      // POST /mod/chatmode — set chat mode (slow, subscribers, emote-only, etc.)
+      router.post('/mod/chatmode', (request) async {
+        final body = await request.readAsString();
+        final params = jsonDecode(body) as Map<String, dynamic>;
+        final result = await executeCommand('chat_mode', params);
+        return shelf.Response.ok(
+          jsonEncode({'success': result.success, 'message': result.message}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      });
+
+      // GET /errors — return buffered backend errors
+      router.get('/errors', (request) {
+        return shelf.Response.ok(
+          jsonEncode({'errors': _errorBuffer.toList()}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      });
+
       // GET /auth/callback — Twitch OAuth redirect handler
       router.get('/auth/callback', (request) async {
         final code = request.url.queryParameters['code'];
@@ -773,6 +864,7 @@ class AgentServer extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('[AgentServer] Failed to start: $e');
+      _recordError('server', 'Failed to start: $e');
       _running = false;
       notifyListeners();
       return false;
